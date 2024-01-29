@@ -43,7 +43,9 @@ IMAGENET_STD = np.array([0.229, 0.224, 0.225])
 class TUSIMPLE(DETECTION):
     def __init__(self, db_config, split):
         super(TUSIMPLE, self).__init__(db_config)
-        data_dir   = system_configs.data_dir
+        # data_dir   = system_configs.data_dir
+        # the below line will work for google colab:
+        data_dir = "/content/LSTR"
         # result_dir = system_configs.result_dir
         cache_dir   = system_configs.cache_dir
         max_lanes   = system_configs.max_lanes
