@@ -6,7 +6,7 @@
 
         "sampling_function": "kp_detection",
 
-        "train_split": "train+val",
+        "train_split": "train",
         "val_split": "val",
         "test_split": "test",
 
@@ -19,12 +19,12 @@
         "opt_algo": "adam",
         "prefetch_size": 5,
 
-        "max_iter": 500000,
-        "stepsize": 450000,
-        "snapshot": 5000,
+        "max_iter": 5000,
+        "stepsize": 4500,
+        "snapshot": 500,
 
-        "cache_dir": "./cache",
-        "result_dir": "./results",
+        "cache_dir": "/content/LSTR/cache",
+        "result_dir": "/content/LSTR/results",
         "data_dir": "../../",
 
         "res_layers": [1, 2, 2, 2],
