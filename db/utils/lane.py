@@ -38,7 +38,7 @@ class LaneEval(object):
         angles = [LaneEval.get_angle(np.array(x_gts), np.array(y_samples)) for x_gts in gt]
         threshs = [LaneEval.pixel_thresh / np.cos(angle) for angle in angles]
         line_accs = []
-        fp, fn = 0., 0.
+        fp, fn, tp, tn = 0., 0., 0., 0.
         matched = 0.
         my_matches = [False] * len(pred)
         my_accs = [0] * len(pred)
@@ -59,6 +59,7 @@ class LaneEval(object):
             else:
                 my_matches[np.argmax(accs)] = True
                 matched += 1
+                tp += 1
             line_accs.append(max_acc)
         fp = len(pred) - matched
         if len(gt) > 4 and fn > 0:
@@ -69,7 +70,7 @@ class LaneEval(object):
         if get_matches:
             return s / max(min(4.0, len(gt)), 1.), fp / len(pred) if len(pred) > 0 else 0., fn / max(
                 min(len(gt), 4.), 1.), my_matches, my_accs, my_dists
-        return s / max(min(4.0, len(gt)), 1.), fp / len(pred) if len(pred) > 0 else 0., fn / max(min(len(gt), 4.), 1.)
+        return s / max(min(4.0, len(gt)), 1.), fp / len(pred) if len(pred) > 0 else 0., fn / max(min(len(gt), 4.), 1.), tp/len(pred), tn
 
     @staticmethod
     def bench_one_submit(pred_file, gt_file):
@@ -84,7 +85,7 @@ class LaneEval(object):
         if len(json_gt) != len(json_pred):
             raise Exception('We do not get the predictions of all the test tasks')
         gts = {l['raw_file']: l for l in json_gt}
-        accuracy, fp, fn = 0., 0., 0.
+        accuracy, fp, fn, tp, tn = 0., 0., 0., 0., 0.
         run_times = []
         for pred in json_pred:
             if 'raw_file' not in pred or 'lanes' not in pred or 'run_time' not in pred:
@@ -99,30 +100,33 @@ class LaneEval(object):
             gt_lanes = gt['lanes']
             y_samples = gt['h_samples']
             try:
-                a, p, n = LaneEval.bench(pred_lanes, gt_lanes, y_samples, run_time)
+                a, p, n, t, t_not = LaneEval.bench(pred_lanes, gt_lanes, y_samples, run_time)
             except BaseException as e:
                 raise Exception('Format of lanes error.')
             accuracy += a
             fp += p
             fn += n
+            tp += t
         num = len(gts)
         # the first return parameter is the default ranking parameter
-        return json.dumps([{
-            'name': 'Accuracy',
-            'value': accuracy / num,
-            'order': 'desc'
-        }, {
-            'name': 'FP',
-            'value': fp / num,
-            'order': 'asc'
-        }, {
-            'name': 'FN',
-            'value': fn / num,
-            'order': 'asc'
-        }, {
-            'name': 'FPS',
-            'value': 1000. / np.mean(run_times)
-        }])
+        pr = 1 - fp / num
+        re = 1 - fn / num
+        tn = len(gts) - (fp + fn + tp) 
+        if (pr+re) == 0:
+            f1 = 0
+        else:
+            f1 = 2*pr*re/(pr+re)
+        return json.dumps([
+            {'name': 'Accuracy', 'value': accuracy / num, 'order': 'desc'},
+            {'name': 'FP', 'value': fp / num, 'order': 'asc'},
+            {'name': 'FN', 'value': fn / num, 'order': 'asc'},
+            {'name': 'TP', 'value': tp / num, 'order': 'desc'},
+            {'name': 'TN', 'value': tn / num, 'order': 'desc'},
+            {'name': 'F1', 'value': f1, 'order': 'asc'},
+            {'name': 'Precision', 'value': pr, 'order':'asc'},
+            {'name': 'Recall', 'value':re, 'order':'asc'},
+            {'name': 'FPS', 'value': 1000. / np.mean(run_times)}
+        ])
 
 
 if __name__ == '__main__':
