@@ -111,7 +111,7 @@ class LaneEval(object):
         # the first return parameter is the default ranking parameter
         pr = 1 - fp / num
         re = 1 - fn / num
-        tn = len(gts) - (fp + fn + tp) 
+        # tn = len(gts) - (fp + fn + tp) 
         if (pr+re) == 0:
             f1 = 0
         else:
